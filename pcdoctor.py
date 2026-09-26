@@ -231,6 +231,37 @@ def coletar_fatos(se, categoria):
     return fatos
 
 
+def mostrar_resultado(se, disparadas):
+    """Exibe diagnóstico, ação e aviso de técnico."""
+    print("\n" + "=" * 60)
+
+    # R11: nenhuma regra disparou
+    if not disparadas:
+        print("DIAGNÓSTICO INCONCLUSIVO (R11)")
+        print("Nenhuma regra da base de conhecimento corresponde aos sintomas.")
+        print("[!] Encaminhe o caso a um técnico especializado.")
+        print("=" * 60)
+        return
+
+    # Agrupa regras com o msm diagnóstico para ñ mostrar 2x
+    # chave = diagnóstico | valor = lista de regras que chegaram nele
+    diagnosticos = {}
+    for regra in disparadas:
+        if regra["entao"] not in diagnosticos:
+            diagnosticos[regra["entao"]] = []
+        diagnosticos[regra["entao"]].append(regra)
+
+    for numero, (diagnostico, regras) in enumerate(diagnosticos.items(), start=1):
+        principal = regras[0]  # regras do mesmo grupo têm a mesma ação
+        print(f"DIAGNÓSTICO {numero}: {diagnostico}")
+        print(f"Ação recomendada: {principal['acao']}")
+        if principal["tecnico"]:
+            print("[!] Recomenda-se procurar assistência técnica.")
+        print("-" * 60)
+
+    print("=" * 60)
+
+
 def main():
     se = SistemaEspecialista()
 
@@ -245,8 +276,7 @@ def main():
             break
         fatos = coletar_fatos(se, categoria)  # memória de trabalho
         disparadas = se.inferir(fatos)        # motor de inferência
-        for regra in disparadas:
-            print(f"DIAGNÓSTICO: {regra['entao']}")
+        mostrar_resultado(se, disparadas)     # resultado
         if not perguntar_sim_nao("\nDeseja fazer um novo diagnóstico?"):
             break
 
