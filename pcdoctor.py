@@ -16,7 +16,8 @@ class SistemaEspecialista:
         }
 
         # BASE DE CONHECIMENTO
-        # Cada fato da base é 1 pergunta de sim/não.
+        # Cada fato da base corresponde a 1 pergunta de sim/não.
+        # chave = nome do fato | valor = texto mostrado ao usuário
         self.perguntas = {
             # perguntas energia
             "sem_energia": "Ao apertar o botão, o computador fica totalmente sem sinal (nenhuma luz, som ou ventoinha)?",
@@ -52,12 +53,12 @@ class SistemaEspecialista:
         # Condições com "não" são escritas como um fato positivo
         # Ex.: "não liga e sem luzes/sons" -> "sem_energia"
 
-        # Condições com OU viram DUAS vão ser duas regras com a mesma ação
+        # Condições com OU viram DUAS regras com a mesma conclusão
         # Checar: Unidade-2_e_3.pdf, slide 37
 
         # A R11 ñ está aqui: ela não tem condição própria.
         # Vamos tratar como o caso em que nenhuma regra dispara (mostrar_resultado())
-        # Checar: Unidade-2_e_3.pdf, slide 38
+        # Checar: Unidade-2_e_3.pdf, slide 38, linha 23
         self.regras = [
             # Categoria: energia
             {
@@ -161,3 +162,24 @@ class SistemaEspecialista:
                 "tecnico": False,
             },
         ]
+
+    # MOTOR DE INFERÊNCIA (encadeamento para frente)
+    def inferir(self, fatos):
+        """Devolve as regras que têm TODAS as condições entre os fatos."""
+        # issubset -> "todas as condições da regra estão nos fatos?" Fatos a mais ñ atrapalham
+        # Checar: Unidade-2_e_3.pdf, slide 38, linha 20
+        disparadas = []
+        for regra in self.regras:
+            if regra["se"].issubset(fatos):
+                disparadas.append(regra)
+        return disparadas
+
+
+
+
+# Teste com fatos fixos, como o Vinicius fez com "joao" e "maria"
+# Checar: Unidade-2_e_3.pdf, slide 38, linhas 25-28
+se = SistemaEspecialista()
+fatos_teste = {"lento", "disco_100", "popups"}
+for regra in se.inferir(fatos_teste):
+    print(regra["id"], "-", regra["entao"])
