@@ -187,6 +187,18 @@ class SistemaEspecialista:
                 disparadas.append(regra)
         return disparadas
 
+    # MÓDULO DE EXPLICAÇÃO
+    def explicar(self, regra):
+        """Monta o texto que mostra POR QUE a regra disparou.
+        É isso que diferencia um SE de um questionário comum.
+        """
+        linhas = [f"Regra {regra['id']} disparou porque você respondeu:"]
+        # Percorre na mesma ordem em que as perguntas foram feitas
+        for fato, texto in self.perguntas.items():
+            if fato in regra["se"]:
+                linhas.append(f"   - {texto} -> Sim")
+        linhas.append(f"   ENTÃO: {regra['entao']}")
+        return "\n".join(linhas)
 
 
 # INTERFACE (TERMINAL)
@@ -232,7 +244,7 @@ def coletar_fatos(se, categoria):
 
 
 def mostrar_resultado(se, disparadas):
-    """Exibe diagnóstico, ação e aviso de técnico."""
+    """Exibe diagnóstico, ação, aviso de técnico e oferece a explicação."""
     print("\n" + "=" * 60)
 
     # R11: nenhuma regra disparou
@@ -259,6 +271,10 @@ def mostrar_resultado(se, disparadas):
             print("[!] Recomenda-se procurar assistência técnica.")
         print("-" * 60)
 
+    if perguntar_sim_nao("Deseja ver por que o sistema chegou a essa conclusão?"):
+        for regra in disparadas:
+            print()
+            print(se.explicar(regra))
     print("=" * 60)
 
 
@@ -276,7 +292,7 @@ def main():
             break
         fatos = coletar_fatos(se, categoria)  # memória de trabalho
         disparadas = se.inferir(fatos)        # motor de inferência
-        mostrar_resultado(se, disparadas)     # resultado
+        mostrar_resultado(se, disparadas)     # resultado + explicação
         if not perguntar_sim_nao("\nDeseja fazer um novo diagnóstico?"):
             break
 
