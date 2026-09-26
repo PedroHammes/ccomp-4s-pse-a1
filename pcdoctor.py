@@ -163,6 +163,19 @@ class SistemaEspecialista:
             },
         ]
 
+    def perguntas_da_categoria(self, categoria):
+        """Gera a lista de perguntas da categoria a partir das REGRAS.
+        Um fato usado por várias regras ("lento" em R4 e R8) é perguntado 1 vez só.
+        """
+        # 1. Junta (união) os fatos das regras da categoria. Como é set, os repetidos somem sozinhos
+        necessarios = set()
+        for regra in self.regras:
+            if regra["categoria"] == categoria:
+                necessarios = necessarios.union(regra["se"])
+
+        # 2. Devolve na ordem de self.perguntas, porque set ñ garante ordem
+        return [fato for fato in self.perguntas if fato in necessarios]
+
     # MOTOR DE INFERÊNCIA (encadeamento para frente)
     def inferir(self, fatos):
         """Devolve as regras que têm TODAS as condições entre os fatos."""
@@ -176,10 +189,70 @@ class SistemaEspecialista:
 
 
 
+# INTERFACE (TERMINAL)
+def perguntar_sim_nao(texto):
+    """Faz uma pergunta e só aceita 's' ou 'n'. Retorna True para sim."""
+    # while True -> ñ sabemos quantas vezes o usuário vai digitar algo inválido
+    while True:
+        resposta = input(f"{texto} (s/n): ").strip().lower()
+        if resposta in ("s", "sim"):
+            return True
+        if resposta in ("n", "nao", "não"):
+            return False
+        print("   Resposta inválida. Digite 's' para sim ou 'n' para não.")
 
-# Teste com fatos fixos, como o Vinicius fez com "joao" e "maria"
-# Checar: Unidade-2_e_3.pdf, slide 38, linhas 25-28
-se = SistemaEspecialista()
-fatos_teste = {"lento", "disco_100", "popups"}
-for regra in se.inferir(fatos_teste):
-    print(regra["id"], "-", regra["entao"])
+
+def escolher_categoria(se):
+    """Mostra o menu de categorias e devolve a escolhida (None = sair)."""
+    chaves = list(se.categorias)  # lista para acessar por número
+    print("\nQual é o tipo de problema?")
+    for numero, chave in enumerate(chaves, start=1):
+        print(f"  {numero} - {se.categorias[chave]}")
+    print("  0 - Sair")
+
+    while True:
+        opcao = input("Escolha uma opção: ").strip()
+        if opcao == "0":
+            return None
+        # isdigit() evita erro no int() quando o usuário digita texto ("abc")
+        if opcao.isdigit() and 1 <= int(opcao) <= len(chaves):
+            return chaves[int(opcao) - 1]
+        print("   Opção inválida.")
+
+
+def coletar_fatos(se, categoria):
+    """Faz as perguntas da categoria e monta a MEMÓRIA DE TRABALHO."""
+    # Só guarda os "sim", igual aos sintomas dos pacientes no slide 38
+    fatos = set()
+    print()
+    for fato in se.perguntas_da_categoria(categoria):
+        if perguntar_sim_nao(se.perguntas[fato]):
+            fatos.add(fato)
+    return fatos
+
+
+def main():
+    se = SistemaEspecialista()
+
+    print("=" * 60)
+    print("PCDoctor - Diagnóstico de Problemas em Computadores")
+    print("Responda às perguntas com 's' (sim) ou 'n' (não).")
+    print("=" * 60)
+
+    while True:
+        categoria = escolher_categoria(se)
+        if categoria is None:
+            break
+        fatos = coletar_fatos(se, categoria)  # memória de trabalho
+        disparadas = se.inferir(fatos)        # motor de inferência
+        for regra in disparadas:
+            print(f"DIAGNÓSTICO: {regra['entao']}")
+        if not perguntar_sim_nao("\nDeseja fazer um novo diagnóstico?"):
+            break
+
+    print("\nObrigado por usar o PCDoctor!")
+
+
+# Só executa main() quando o arquivo é rodado direto (python pcdoctor.py), ñ quando é importado
+if __name__ == "__main__":
+    main()
