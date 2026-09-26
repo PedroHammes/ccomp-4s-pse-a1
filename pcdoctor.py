@@ -163,6 +163,19 @@ class SistemaEspecialista:
             },
         ]
 
+    def validar_base(self):
+        """Verifica se toda condição usada nas regras tem uma pergunta.
+        Protege contra erro de digitação no nome ("disco_10" -> "disco_100")
+        """
+        erros = []
+        for regra in self.regras:
+            if regra["categoria"] not in self.categorias:
+                erros.append(f"{regra['id']}: categoria '{regra['categoria']}' não existe.")
+            for fato in regra["se"]:
+                if fato not in self.perguntas:
+                    erros.append(f"{regra['id']}: fato '{fato}' não tem pergunta cadastrada.")
+        return erros
+
     def perguntas_da_categoria(self, categoria):
         """Gera a lista de perguntas da categoria a partir das REGRAS.
         Um fato usado por várias regras ("lento" em R4 e R8) é perguntado 1 vez só.
@@ -280,6 +293,14 @@ def mostrar_resultado(se, disparadas):
 
 def main():
     se = SistemaEspecialista()
+
+    # Verifica a base antes de usar o sistema
+    erros = se.validar_base()
+    if erros:
+        print("Erro na base de conhecimento:")
+        for erro in erros:
+            print(" -", erro)
+        return
 
     print("=" * 60)
     print("PCDoctor - Diagnóstico de Problemas em Computadores")
